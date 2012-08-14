@@ -1,0 +1,38 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=4170
+
+Vdebug is a new, fast, powerful debugger client for Vim. It's multi-language, and has been tested with PHP, Python, Ruby and Perl. It interfaces with any debugger that faithfully uses the DBGP protocol, such as Xdebug for PHP.
+
+It builds on the experience gained through the legacy of the Xdebug Vim script originally created by Seung Woo Shin and extended by so many others, but it's a total rebuild to allow for a nicer interface and support of new features.
+
+Plus, I find it a LOT faster. Why not try it for yourself?
+
+It's written in Python, and has an object-oriented interface that is easy to extend and can even be used from the command-line. It even has unit tests covering some of the more critical parts of the code.
+
+--------------------
+Main features
+--------------------
+
+- Multi-language support
+- Set and remove breakpoints (line, conditional, exception, return and call)
+- Watch window showing all variables, and allowing you to switch context (to globals, etc)
+- Watch window variables shown as a tree, and drill down into child elements
+- Run "eval" commands on code snippets and see the output as a tree
+- Run to cursor
+- Support for debugging scripts on a remote machine
+- The usual commands: run, step over, step in, step out, stop and detach
+- IDE key support
+- Complete key re-mapping possible
+- Lots of configuration options
+- Log to file or Vim window
+
+-----------------
+How to use
+-----------------
+
+There is very extensive help provided in the form of a Vim help file. This goes through absolutely everything, from installation to configuration, setting up debuggers for various languages, explanation of the interface, options, remote server debugging and more.
+
+To get this help, type:
+
+    :help Vdebug
+
+after installing the plugin.
