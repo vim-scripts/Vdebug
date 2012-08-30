@@ -41,8 +41,6 @@ else
   endif
 endif
 
-python debugger = DebuggerInterface()
-
 if !exists("g:vdebug_options")
     let g:vdebug_options = {}
 endif
@@ -53,7 +51,7 @@ endif
 
 let g:vdebug_keymap_defaults = {
 \    "run" : "<F5>",
-\    "run_to_cursor" : "<F1>",
+\    "run_to_cursor" : "<F9>",
 \    "step_over" : "<F2>",
 \    "step_into" : "<F3>",
 \    "step_out" : "<F4>",
@@ -61,6 +59,7 @@ let g:vdebug_keymap_defaults = {
 \    "detach" : "<F7>",
 \    "set_breakpoint" : "<F10>",
 \    "get_context" : "<F11>",
+\    "eval_under_cursor" : "<F12>",
 \}
 
 let g:vdebug_options_defaults = {
@@ -79,10 +78,12 @@ let g:vdebug_options_defaults = {
 
 let g:vdebug_options = extend(g:vdebug_options_defaults,g:vdebug_options)
 let g:vdebug_keymap = extend(g:vdebug_keymap_defaults,g:vdebug_keymap)
+let g:vdebug_leader_key = ""
 
-for [s:fname, s:key] in items(g:vdebug_keymap)
-    exe "map ".s:key." :python debugger.".s:fname."()<cr>"
-endfor
+python debugger = DebuggerInterface()
+
+exe "map ".g:vdebug_keymap["run"]." :python debugger.run()<cr>"
+exe "map ".g:vdebug_keymap["set_breakpoint"]." :python debugger.set_breakpoint()<cr>"
 
 vnoremap <Leader>e :python debugger.handle_visual_eval()<cr>
 

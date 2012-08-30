@@ -1,5 +1,38 @@
 import vdebug.opts
 import vdebug.log
+import vim
+import sys
+
+class Keymapper:
+    """Map and unmap key commands for the Vim user interface.
+    """
+
+    exclude = ["run","set_breakpoint"]
+
+    def __init__(self):
+        self.keymaps = vim.eval("g:vdebug_keymap")
+        self.leader = vim.eval("g:vdebug_leader_key")
+        self.is_mapped = False
+
+    def map(self):
+        if self.is_mapped:
+            return
+        for func in self.keymaps:
+            key = self.keymaps[func]
+            if func not in self.exclude:
+                map_cmd = "map %s%s :python debugger.%s()<cr>" %\
+                    (self.leader,key,func)
+                vim.command(map_cmd)
+        self.is_mapped = True
+
+    def unmap(self):
+        if self.is_mapped:
+            self.is_mapped = False
+
+            for func in self.keymaps:
+                key = self.keymaps[func]
+                if func not in self.exclude:
+                    vim.command("unmap %s%s" %(self.leader,key))
 
 class FilePath:
     """Normalizes a file name and allows for remote and local path mapping.
@@ -8,8 +41,12 @@ class FilePath:
         if filename is None or \
             len(filename) == 0:
             raise FilePathError, "Missing or invalid file name"
-        if filename.startswith('file://'):
-            filename = filename[7:]
+        if filename.startswith('file:///'):
+            if sys.platform == "win32":
+                """ remove prefix till the drive letter """
+                filename = filename[8:]
+            else:
+                filename = filename[7:]
         self.local = self._create_local(filename)
         self.remote = self._create_remote(filename)
 

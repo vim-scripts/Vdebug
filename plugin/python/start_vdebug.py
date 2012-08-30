@@ -6,7 +6,6 @@ dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 sys.path.append(dir)
 
 import socket
-import vim
 import traceback
 import vdebug.runner
 import vdebug.event
@@ -22,7 +21,7 @@ class DebuggerInterface:
         self.event_dispatcher = vdebug.event.Dispatcher(self.runner)
 
     def __del__(self):
-        self.runner.close()
+        self.runner.close_connection()
 
     def run(self):
         """Tell the debugger to run, until the next breakpoint or end of script.
@@ -93,6 +92,14 @@ class DebuggerInterface:
         """
         try:
             return self.runner.eval(args)
+        except Exception, e:
+            self.handle_exception(e)
+
+    def eval_under_cursor(self):
+        """Evaluate the property under the cursor.
+        """
+        try:
+            return self.event_dispatcher.eval_under_cursor()
         except Exception, e:
             self.handle_exception(e)
 
@@ -173,6 +180,11 @@ class DebuggerInterface:
         """
         self.runner.ui.error(str(e))
 
+    def handle_dbgp_error(self,e):
+        """Simply print an error, since it is human readable enough.
+        """
+        self.runner.ui.error(str(e.args[0]))
+
     def handle_general_exception(self):
         """Handle an unknown error of any kind.
         """
@@ -191,6 +203,8 @@ class DebuggerInterface:
             self.handle_readable_error(e)
         elif isinstance(e,vdebug.log.LogError):
             self.handle_readable_error(e)
+        elif isinstance(e,vdebug.dbgp.DBGPError):
+            self.handle_dbgp_error(e)
         elif isinstance(e,(EOFError,socket.error)):
             self.handle_socket_end()
         elif isinstance(e,KeyboardInterrupt):
