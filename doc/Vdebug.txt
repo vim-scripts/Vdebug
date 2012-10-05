@@ -28,6 +28,7 @@ CONTENTS                                                      *Vdebug-contents*
         3.2 Python set up............................|VdebugSetUpPython|
         3.3 Ruby set up..............................|VdebugSetUpRuby|
         3.4 Perl set up..............................|VdebugSetUpPerl|
+        3.5 NodeJS set up............................|VdebugSetUpNodejs|
     4. Usage.........................................|VdebugUsage|
         4.1 Starting the debugger....................|VdebugStart|
         4.2 Finding your way around the UI...........|VdebugUI|
@@ -336,6 +337,21 @@ run: >
 If you haven't started Vdebug you will get a message saying that it can't
 connect. This means you've set it up correctly.
 
+------------------------------------------------------------------------------
+3.5 NodeJS set up                                          *VdebugSetUpNodejs*
+
+NodeJS is the easiest language to set up for debugging with Vdebug, as
+Activestate have made the debugger engine available through npm. All you need
+to do is run: >
+    npm install komodo-debug -g
+<
+
+You can then begin a debug session by starting Vdebug and running: >
+    node-dbgp -h 127.0.0.1 -p 9000 myscript.js
+<
+Where the 'h' option specifies the address that Vdebug is listening on, and 'p'
+is the port.
+
 ==============================================================================
 4. Usage                                                         *VdebugUsage*
 
@@ -400,6 +416,12 @@ open tree and diamonds show variables that don't have children.
 To open a closed tree, navigate to a line with a closed tree (right arrow) and
 press <enter> (<cr>) or double-click if you have mouse-support enabled. This 
 will open the tree, and show all the children.
+
+There are two style options for the watch window: expanded (default) and compact.
+The expanded version has a new line between each variable, and uses separator
+strings to indicate relationships. The compact version has a variable on each
+line, and works better for smaller screens. To set this option, see 
+|VdebugOptions-watch_window_style|.
 
 The watch window automatically updates every time the debugger pauses, so
 nothing needs to be done on your part.
@@ -707,6 +729,7 @@ default ptions look like this: >
     \    "debug_window_level" : 0,
     \    "debug_file_level" : 0,
     \    "debug_file" : "",
+    \    "watch_window_style" : 'expanded',
     \}
 <
 You can either use the multi-line notation like above, or set individual keys:
@@ -793,6 +816,12 @@ g:vdebug_options["debug_file"] (default = empty)
     Sets the path to the log file, which writes information set by
     |VdebugOptions-debug_file_level|. This is empty by default, meaning that
     file logging is turned off. Enter a file path to enable file logging.
+
+                                            *VdebugOptions-watch_window_style*
+g:vdebug_options["watch_window_style"] (default = 'expanded')    
+    Sets the style of the watch window, 'expanded' or 'compact'. The compact
+    version works better for smaller screens, but the expanded version looks
+    a bit nicer in my opinion.
 
 ==============================================================================
 6. Key maps                                                       *VdebugKeys*
@@ -968,6 +997,12 @@ it to this list.
     A. This is addressed in |VdebugSetUpPython|. A patch needs to be applied 
         to the debugger engine code.
 
+    Q. I am debugging a PHP script and VDebug won't stop at my breakpoint, but 
+        it will stop at other breakpoints. What do I do?
+    A. You should try reproducing this case outside of your (likely large) 
+        codebase. In the meantime, you can use the xdebug_break() function to 
+        hardcode a breakpoint in your file.
+
     Q. I keep getting error <x> when doing <y>.
     A. Send the details of the error to me at the email address at the top of
         this section, or raise an issue on the Github page.
@@ -989,3 +1024,7 @@ This plugin was inspired by the original Xdebug plugin created by Seung Woo Shin
 http://www.vim.org/scripts/script.php?script_id=1152. There are even a few
 remnants of the original code, but not many. He showed us all that it was
 possible.
+
+Thanks to everyone who's contributed ideas and code so far, including Githubbers
+artnez, csomme and beatle. Also thanks to Gareth Oslar to pointing out that
+Vdebug (almost) worked with NodeJS.

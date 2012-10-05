@@ -2,8 +2,8 @@ import sys
 import os
 import inspect
 
-dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
-sys.path.append(dir)
+directory = os.path.dirname(inspect.getfile(inspect.currentframe()))
+sys.path.append(directory)
 
 import socket
 import traceback
@@ -160,6 +160,12 @@ class DebuggerInterface:
         self.runner.close()
         self.runner.ui.say("No connection was made")
 
+    def handle_interrupt(self):
+        """Handle a user interrupt, which is pretty normal. 
+        """
+        self.runner.close()
+        self.runner.ui.say("Connection cancelled")
+
     def handle_socket_end(self):
         """Handle a socket closing, which is pretty normal.
         """
@@ -197,6 +203,8 @@ class DebuggerInterface:
         """
         if isinstance(e,vdebug.dbgp.TimeoutError):
             self.handle_timeout()
+        elif isinstance(e,vdebug.util.UserInterrupt):
+            self.handle_interrupt()
         elif isinstance(e,vdebug.event.EventError):
             self.handle_readable_error(e)
         elif isinstance(e,vdebug.breakpoint.BreakpointError):

@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import socket
 import vdebug.log
 import base64
+import time
 
 """ Response objects for the DBGP module."""
 
@@ -324,7 +325,7 @@ class Api:
     def property_get(self,name):
         """Get a property.
         """
-        return self.send_cmd('property_get','-n '+name,ContextGetResponse)
+        return self.send_cmd('property_get','-n %s -d 0' % name,ContextGetResponse)
 
     def detach(self):
         """Tell the debugger to detach itself from this
@@ -361,7 +362,7 @@ class Connection:
     address = None
     isconned = 0
 
-    def __init__(self, host = '', port = 9000, timeout = 30):
+    def __init__(self, host = '', port = 9000, timeout = 30, input_stream = None):
         """Create a new Connection.
 
         The connection is not established until open() is called.
@@ -369,10 +370,12 @@ class Connection:
         host -- host name where debugger is running (default '')
         port -- port number which debugger is listening on (default 9000)
         timeout -- time in seconds to wait for a debugger connection before giving up (default 30)
+        input_stream -- object for checking input stream and user interrupts (default None)
         """
         self.port = port
         self.host = host
         self.timeout = timeout
+        self.input_stream = input_stream
 
     def __del__(self):
         """Make sure the connection is closed."""
@@ -383,26 +386,46 @@ class Connection:
         return self.isconned
 
     def open(self):
-        """Listen for a connection from the debugger.
-
-        The socket is blocking, and it will wait for the length of
-        time given by the timeout (default is 30 seconds).
-        """
+        """Listen for a connection from the debugger. Listening for the actual
+        connection is handled by self.listen()."""
         print 'Waiting for a connection (this message will self-destruct in ',self.timeout,' seconds...)'
         serv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            serv.settimeout(self.timeout)
+            serv.setblocking(0)
             serv.bind((self.host, self.port))
             serv.listen(5)
-            (self.sock, self.address) = serv.accept()
+            (self.sock, self.address) = self.listen(serv, self.timeout)
             self.sock.settimeout(None)
         except socket.timeout:
             serv.close()
             raise TimeoutError,"Timeout waiting for connection"
+        except:
+            serv.close()
+            raise
 
         self.isconned = 1
         serv.close()
+    
+    def listen(self, serv, timeout):
+        """Non-blocking listener. Provides support for keyboard interrupts from
+        the user. Although it's non-blocking, the user interface will still 
+        block until the timeout is reached.
+        
+        serv -- Socket server to listen to.
+        timeout -- Seconds before timeout.
+        """
+        start = time.time()
+        while True:
+            if (time.time() - start) > timeout:
+                raise socket.timeout
+            try:
+                """Check for user interrupts"""
+                if self.input_stream is not None:
+                    self.input_stream.probe()
+                return serv.accept()
+            except socket.error:
+                pass
 
     def close(self):
         """Close the connection."""
@@ -609,7 +632,7 @@ class EvalProperty(ContextProperty):
 
     def _determine_displayname(self,node):
         if self.is_parent:
-            self.display_name = "(%s)" % self.code
+            self.display_name = self.code
         else:
             if self.language == 'php' or \
                     self.language == 'perl':
@@ -634,7 +657,6 @@ class EvalProperty(ContextProperty):
 """ Errors/Exceptions """
 class TimeoutError(Exception):
     pass
-
 
 class DBGPError(Exception):
     """Raised when the debugger returns an error message."""

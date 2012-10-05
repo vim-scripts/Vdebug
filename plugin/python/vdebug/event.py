@@ -1,5 +1,6 @@
 # coding=utf-8
 import vdebug.log
+import vdebug.opts
 import vim
 import re
 
@@ -130,6 +131,8 @@ class StackWindowLineSelectEvent(Event):
         vdebug.log.Log("User action in stack window, line %s" % lineno,\
                 vdebug.log.Logger.DEBUG)
         line = runner.ui.stackwin.buffer[lineno-1]
+        if line.find(" @ ") == -1:
+            return False
         filename_pos = line.find(" @ ") + 3
         file_and_line = line[filename_pos:]
         line_pos = file_and_line.find(":")
@@ -169,7 +172,6 @@ class WatchWindowHideEvent(Event):
 
         buf_len = len(vim.current.buffer)
         end_lineno = buf_len - 1
-        print "End line: %i" % end_lineno
         for i in range(lineno,end_lineno):
             buf_line = vim.current.buffer[i]
             char = buf_line[pointer_index]
@@ -177,7 +179,10 @@ class WatchWindowHideEvent(Event):
                 end_lineno = i - 1
                 break
         runner.ui.watchwin.delete(lineno,end_lineno+1)
-        append = "\n" + "".rjust(pointer_index) + "|"
+        if vdebug.opts.Options.get('watch_window_style') == 'expanded':
+            append = "\n" + "".rjust(pointer_index) + "|"
+        else:
+            append = ""
         runner.ui.watchwin.insert(line.replace("▾","▸")+append,lineno-1,True)
 
 class WatchWindowContextChangeEvent(Event):

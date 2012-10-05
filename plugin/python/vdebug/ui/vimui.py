@@ -406,10 +406,11 @@ class StackGetResponseRenderer(ResponseRenderer):
         stack = self.response.get_stack()
         string = ""
         for s in stack:
-            file = s.get('filename')[7:]
+            where = s.get('where') if s.get('where') else 'main'
+            file = vdebug.util.FilePath(s.get('filename'))
             line = "[%(num)s] %(where)s @ %(file)s:%(line)s" \
-                    %{'num':s.get('level'),'where':s.get('where'),\
-                    'file':file,'line':s.get('lineno')}
+                    %{'num':s.get('level'),'where':where,\
+                    'file':str(file),'line':s.get('lineno')}
             string += line + "\n"
         return string
 
@@ -461,23 +462,23 @@ class ContextGetResponseRenderer(ResponseRenderer):
                 'marker':self.__get_marker(p),'name':p.display_name,\
                 'type':p.type_and_size(),'value':p.value}
 
-        depth = p.depth
-        if next_p and not last:
-            next_depth = next_p.depth
-            if depth == next_depth:
-                next_sep = "|"
-                num_spaces = depth * 2
-            elif depth > next_depth:
-                next_sep = "/"
-                num_spaces = (depth * 2) - 1
-            else:
-                next_sep = "\\"
-                num_spaces = (depth * 2) + 1
+        if vdebug.opts.Options.get('watch_window_style') == 'expanded':
+            depth = p.depth
+            if next_p and not last:
+                next_depth = next_p.depth
+                if depth == next_depth:
+                    next_sep = "|"
+                    num_spaces = depth * 2
+                elif depth > next_depth:
+                    next_sep = "/"
+                    num_spaces = (depth * 2) - 1
+                else:
+                    next_sep = "\\"
+                    num_spaces = (depth * 2) + 1
 
-            line += "".rjust(num_spaces+indent) + " " + next_sep + "\n"
-        elif depth > 0:
-            line += "".rjust((depth * 2) - 1 + indent) + " /" + "\n"
-
+                line += "".rjust(num_spaces+indent) + " " + next_sep + "\n"
+            elif depth > 0:
+                line += "".rjust((depth * 2) - 1 + indent) + " /" + "\n"
         return line
 
     def __get_marker(self,property):
