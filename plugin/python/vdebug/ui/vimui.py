@@ -13,15 +13,21 @@ class Ui(vdebug.ui.interface.Ui):
         vdebug.ui.interface.Ui.__init__(self)
         self.is_open = False
         self.breakpoint_store = breakpoints
+        self.emptybuffer = None
         self.breakpointwin = BreakpointWindow(self,'rightbelow 7new')
 
     def open(self):
         if self.is_open:
             return
         self.is_open = True
-        vim.command('silent tabnew')
-        self.tabnr = vim.eval("tabpagenr()")
         
+        cur_buf_name = vim.eval("bufname('%')")
+        if cur_buf_name is None:
+            cur_buf_name = ''
+
+        vim.command('silent tabnew ' + cur_buf_name)
+        self.tabnr = vim.eval("tabpagenr()")
+
         srcwin_name = self.__get_srcwin_name()
 
         self.watchwin = WatchWindow(self,'vertical belowright new')
@@ -51,6 +57,9 @@ class Ui(vdebug.ui.interface.Ui):
         self.sourcewin.set_file(file)
         self.sourcewin.set_line(lineno)
         self.sourcewin.place_pointer(lineno)
+
+    def __get_buf_list(self):
+        return vim.eval("range(1, bufnr('$'))")
 
     def mark_as_stopped(self):
         if self.is_open:
@@ -482,10 +491,10 @@ class ContextGetResponseRenderer(ResponseRenderer):
         return line
 
     def __get_marker(self,property):
-        char = "⬦"
+        char = vdebug.opts.Options.get('marker_default')
         if property.has_children:
             if property.child_count() == 0:
-                char = "▸"
+                char = vdebug.opts.Options.get('marker_closed_tree')
             else:
-                char = "▾"
+                char = vdebug.opts.Options.get('marker_open_tree')
         return char

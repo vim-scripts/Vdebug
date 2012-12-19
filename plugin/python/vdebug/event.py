@@ -21,11 +21,13 @@ class Dispatcher:
         if event is not None:
             return event.execute(self.runner)
         else:
+            vdebug.log.Log("No executable event found at current cursor position",\
+                    vdebug.log.Logger.DEBUG)
             return False
 
     def _get_event_by_position(self):
         buf_name = vim.current.buffer.name
-        p = re.compile('.*[\\/]([^\\/]+)')
+        p = re.compile('.*[\\\/]([^\\\/]+)')
         m = p.match(buf_name)
         if m is None:
             return None
@@ -35,12 +37,12 @@ class Dispatcher:
             lineno = vim.current.window.cursor[0]
             vdebug.log.Log("User action in watch window, line %s" % lineno,\
                     vdebug.log.Logger.DEBUG)
-            line = self.runner.ui.watchwin.buffer[lineno-1]
+            line = self.runner.ui.watchwin.buffer[lineno-1].strip()
             if lineno == 1:
                 return WatchWindowContextChangeEvent()
-            elif line.find("▸") > -1:
+            elif line.startswith(vdebug.opts.Options.get('marker_closed_tree')):
                 return WatchWindowPropertyGetEvent()
-            elif line.find("▾") > -1:
+            elif line.startswith(vdebug.opts.Options.get('marker_open_tree')):
                 return WatchWindowHideEvent()
         elif window_name == self.runner.ui.stackwin.name:
             return StackWindowLineSelectEvent()
@@ -149,13 +151,14 @@ class WatchWindowPropertyGetEvent(Event):
     def execute(self,runner):
         lineno = vim.current.window.cursor[0]
         line = vim.current.buffer[lineno-1]
-        pointer_index = line.find("▸")
+        pointer_index = line.find(vdebug.opts.Options.get('marker_closed_tree'))
+        step = len(vdebug.opts.Options.get('marker_closed_tree')) + 1
 
         eq_index = line.find('=')
         if eq_index == -1:
             raise EventError, "Cannot read the selected property"
 
-        name = line[pointer_index+4:eq_index-1]
+        name = line[pointer_index+step:eq_index-1]
         context_res = runner.api.property_get(name)
         rend = vdebug.ui.vimui.ContextGetResponseRenderer(context_res)
         output = rend.render(pointer_index - 1)
@@ -168,7 +171,7 @@ class WatchWindowHideEvent(Event):
     def execute(self,runner):
         lineno = vim.current.window.cursor[0]
         line = vim.current.buffer[lineno-1]
-        pointer_index = line.find("▾")
+        pointer_index = line.find(vdebug.opts.Options.get('marker_open_tree'))
 
         buf_len = len(vim.current.buffer)
         end_lineno = buf_len - 1
@@ -183,7 +186,10 @@ class WatchWindowHideEvent(Event):
             append = "\n" + "".rjust(pointer_index) + "|"
         else:
             append = ""
-        runner.ui.watchwin.insert(line.replace("▾","▸")+append,lineno-1,True)
+        runner.ui.watchwin.insert(line.replace(\
+                    vdebug.opts.Options.get('marker_open_tree'),\
+                    vdebug.opts.Options.get('marker_closed_tree'),1) + \
+                append,lineno-1,True)
 
 class WatchWindowContextChangeEvent(Event):
     """Event used to trigger a watch window context change.

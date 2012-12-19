@@ -78,7 +78,10 @@ class Runner:
             elif str(status) in ("stopping","stopped"):
                 self.ui.statuswin.set_status("stopped")
                 self.ui.say("Debugging session has ended")
-                self.close_connection()
+                self.close_connection(False)
+                if vdebug.opts.Options.get('continuous_mode',bool):
+                    self.open()
+                    return
             else:
                 vdebug.log.Log("Getting stack information")
                 self.ui.statuswin.set_status(status)
@@ -271,10 +274,10 @@ class Runner:
         if not self.is_alive():
             self.ui.error("Cannot detach: no debugger connection")
         else:
-            self.say("Detaching the debugger")
+            self.ui.say("Detaching the debugger")
             self.api.detach()
 
-    def close_connection(self):
+    def close_connection(self,stop = True):
         """ Close the connection to the debugger.
         """
         self.breakpoints.unlink_api()
@@ -282,13 +285,20 @@ class Runner:
         try:
             if self.is_alive():
                 vdebug.log.Log("Closing the connection")
-                if vdebug.opts.Options.get('on_close') == 'detach':
-                    self.api.detach()
-                else:
-                    self.api.stop()
+                if stop:
+                    if vdebug.opts.Options.get('on_close') == 'detach':
+                        try:
+                            self.api.detach()
+                        except vdebug.dbgp.CmdNotImplementedError:
+                            self.ui.error('Detach is not supported by the debugger, stopping instead')
+                            vdebug.opts.Options.overwrite('on_close','stop')
+                            self.api.stop()
+                    else:
+                        self.api.stop()
                 self.api.conn.close()
-                
-            self.api = None
+                self.api = None
+            else:
+                self.api = None
         except EOFError:
             self.api = None
             self.ui.say("Connection has been closed")
