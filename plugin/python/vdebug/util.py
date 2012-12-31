@@ -1,7 +1,7 @@
 import vdebug.opts
 import vdebug.log
 import vim
-import sys
+import re
 import urllib
 
 class Keymapper:
@@ -52,6 +52,8 @@ class Keymapper:
                 vim.command("map %s" % mapping)
 
 class FilePath:
+    is_win = False
+
     """Normalizes a file name and allows for remote and local path mapping.
     """
     def __init__(self,filename):
@@ -59,12 +61,15 @@ class FilePath:
             len(filename) == 0:
             raise FilePathError, "Missing or invalid file name"
         filename = urllib.unquote(filename)
-        if filename.startswith('file:///'):
-            if sys.platform == "win32":
-                """ remove prefix till the drive letter """
-                filename = filename[8:]
-            else:
-                filename = filename[7:]
+        if filename.startswith('file://'):
+            filename = filename[7:]
+
+        p = re.compile('^/?[a-zA-Z]:')
+        if p.match(filename):
+            self.is_win = True
+            if filename[0] == "/":
+                filename = filename[1:]
+
         self.local = self._create_local(filename)
         self.remote = self._create_remote(filename)
 
@@ -74,9 +79,12 @@ class FilePath:
         Uses the "local_path" and "remote_path" options.
         """
         ret = f
+        if ret[2] == "/":
+            ret = ret.replace("/","\\")
+        
         if vdebug.opts.Options.isset('path_maps'):
             for remote, local in vdebug.opts.Options.get('path_maps', dict).items():
-                if ret.startswith(remote):
+                if remote in ret:
                     vdebug.log.Log("Replacing remote path (%s) " % remote +\
                             "with local path (%s)" % local ,\
                             vdebug.log.Logger.DEBUG)
@@ -90,16 +98,21 @@ class FilePath:
         Uses the "local_path" and "remote_path" options.
         """
         ret = f
+        if ret[2] == "\\":
+            ret = ret.replace("\\","/")
 
         if vdebug.opts.Options.isset('path_maps'):
             for remote, local in vdebug.opts.Options.get('path_maps', dict).items():
-                if ret.startswith(local):
+                if local in ret:
                     vdebug.log.Log("Replacing local path (%s) " % local +\
                             "with remote path (%s)" % remote ,\
                             vdebug.log.Logger.DEBUG)
                     ret = ret.replace(local,remote)
                     break
-        return ret
+        if self.is_win:
+            return "file:///"+ret
+        else:
+            return "file://"+ret
 
     def as_local(self,quote = False):
         if quote:
