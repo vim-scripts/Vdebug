@@ -58,9 +58,6 @@ class Ui(vdebug.ui.interface.Ui):
         self.sourcewin.set_line(lineno)
         self.sourcewin.place_pointer(lineno)
 
-    def __get_buf_list(self):
-        return vim.eval("range(1, bufnr('$'))")
-
     def mark_as_stopped(self):
         if self.is_open:
             if self.sourcewin:
@@ -87,6 +84,12 @@ class Ui(vdebug.ui.interface.Ui):
     def get_current_row(self):
         return vim.current.window.cursor[0]
 
+    def get_current_line(self):
+        return self.get_line(self.get_current_row())
+
+    def get_line(self,row):
+        return vim.eval("getline(" + str(row) + ")")
+
     def register_breakpoint(self,breakpoint):
         if breakpoint.type == 'line':
             self.place_breakpoint(breakpoint.id,\
@@ -105,17 +108,23 @@ class Ui(vdebug.ui.interface.Ui):
         if self.breakpointwin.is_open:
             self.breakpointwin.remove_breakpoint(id)
 
-    def __get_srcwin_name(self):
-        return vim.windows[0].buffer.name
+    def get_breakpoint_sign_positions(self):
+        sign_lines = self.command('sign place').split("\n")
+        positions = {}
+        for line in sign_lines:
+            if "name=breakpt" in line:
+                attributes = line.strip().split()
+                lineinfo = attributes[0].split('=')
+                idinfo = attributes[1].split('=')
+                positions[idinfo[1]] = lineinfo[1]
+        return positions
 
-    def __get_srcwinno_by_name(self,name):
-        i = 1
-        for w in vim.windows:
-            if w.buffer.name == name:
-                break
-            else:
-                i += 1
-        return i
+    # Execute a vim command and return the output.
+    def command(self,cmd):
+        vim.command('redir => _tmp')
+        vim.command('silent %s' % cmd)
+        vim.command('redir END')
+        return vim.eval('_tmp')
 
     def say(self,string):
         """ Vim picks up Python prints, so just print """
@@ -147,6 +156,29 @@ class Ui(vdebug.ui.interface.Ui):
         self.watchwin = None
         self.stackwin = None
         self.statuswin = None
+
+
+    def __get_srcwin_name(self):
+        return vim.current.buffer.name
+
+    def __get_srcwinno_by_name(self,name):
+        i = 1
+        vdebug.log.Log("Searching for win by name %s" % name,\
+                vdebug.log.Logger.INFO)
+        for w in vim.windows:
+            vdebug.log.Log("Win %d, name %s" %(i,w.buffer.name),\
+                vdebug.log.Logger.INFO)
+            if w.buffer.name == name:
+                break
+            else:
+                i += 1
+
+        vdebug.log.Log("Returning window number %d" % i,\
+                vdebug.log.Logger.INFO)
+        return i
+
+    def __get_buf_list(self):
+        return vim.eval("range(1, bufnr('$'))")
 
 class SourceWindow(vdebug.ui.interface.Window):
 

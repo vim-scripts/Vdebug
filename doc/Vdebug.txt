@@ -57,6 +57,8 @@ CONTENTS                                                      *Vdebug-contents*
             4.5.2 Evaluating highlighted expressions.|VdebugEvalHighlighted|
             4.5.3 Evaluating variable under cursor   |VdebugEvalUnderCursor|
     5. Options.......................................|VdebugOptions|
+        5.1 Quickly setting options..................|VdebugOpt|
+        5.2 List of options..........................|VdebugOptionList|
     6. Key maps......................................|VdebugKeys|
     7. Using an IDE key..............................|VdebugIDEKey|
     8. Debugging a script on a remote server.........|VdebugRemote|
@@ -742,10 +744,36 @@ some debugger engines.
 ==============================================================================
 5. Options                                                     *VdebugOptions*
 
-As there are a lot of options in Vdebug, they are set using a dictionary
-(the equivalent of an associative array in PHP or a hash in Ruby). This
-dictionary can be modified using the global variable "g:vdebug_options". The
-default ptions look like this: >
+There are two ways of setting options for Vdebug. The options are stored in a 
+Vim dictionary (the equivalent of an associative array in PHP or a hash in Ruby). 
+This dictionary can be modified using the global variable "g:vdebug_options".
+However, as you may want to change options on the fly, a command (:VdebugOpt) 
+has been added for your convenience so that you can easily get and set options 
+without having to use Vim dictionary syntax.
+
+I've found that the best way of setting options is to use the dictionary in your
+vimrc file and the :VdebugOpt command when you want to set options on the fly.
+
+------------------------------------------------------------------------------
+5.1 Quickly setting options with :VdebugOpt                        *VdebugOpt*
+
+The VdebugOpt command takes one or two arguments: one if you want to retrieve
+the value of an option, and two if you want to set the option to a new value.
+The first argument autocompletes with a list of options, and the second argument
+will autocomplete to the current value, if set. Here are some examples: >
+
+    :VdebugOpt server " Prints the current value
+    :VdebugOpt continuous_mode 0 "Sets to 0
+    :VdebugOpt debug_file /home/jon/vdebug.log
+<
+Note that using :VdebugOpt only sets the value of the option for the time that
+your vim session is open. As soon as you close it they will be forgotten, so
+retain option settings by adding them to your vimrc.
+
+------------------------------------------------------------------------------
+5.2 List of options                                         *VdebugOptionList*
+
+The default options look like this: >
     let g:vdebug_options= {
     \    "port" : 9000,
     \    "server" : 'localhost',
@@ -877,10 +905,10 @@ g:vdebug_options["continuous_mode"] (default = 0)
 By default, function keys are mapped to execute debugger commands. However, I'm
 aware that people may already have them mapped to something else, so would like
 to change the default behaviour. Before you do that, be aware that Vdebug only
-maps one command outside of the debugger mode, which is "run". All others are
-mapped only when Vdebug starts up, and unmapped when it shuts down. Not only this,
-but any commands that you have already mapped to these keys will be remembered 
-and restored when you come out of debugging mode.
+maps two commands outside of the debugger mode, "run" and "set_breakpoint". All
+others are mapped only when Vdebug starts up, and unmapped when it shuts down.
+Not only this, but any commands that you have already mapped to these keys will
+be remembered and restored when you come out of debugging mode.
 
 If you would still like to remap the default keys, this is possible using the 
 key map dictionary, g:vdebug_keymap: >
@@ -900,7 +928,7 @@ key map dictionary, g:vdebug_keymap: >
 <
 
 As you can see, these are the default keys. You can change the keys using the
-multi-line notation as shown above, or by setting invidiual keys: >
+multi-line notation as shown above, or by setting individual keys: >
 
     let g:vdebug_keymap['run'] = '<C-s>'
 <
