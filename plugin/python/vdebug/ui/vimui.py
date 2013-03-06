@@ -15,43 +15,58 @@ class Ui(vdebug.ui.interface.Ui):
         self.breakpoint_store = breakpoints
         self.emptybuffer = None
         self.breakpointwin = BreakpointWindow(self,'rightbelow 7new')
+        self.current_tab = "1"
+        self.tabnr = None
+
+    def is_modified(self):
+       modified = int(vim.eval('&mod'))
+       if modified:
+           return True
+       else:
+           return False
 
     def open(self):
         if self.is_open:
             return
         self.is_open = True
         
-        cur_buf_name = vim.eval("bufname('%')")
-        if cur_buf_name is None:
-            cur_buf_name = ''
+        try:
+            cur_buf_name = vim.eval("bufname('%')")
+            if cur_buf_name is None:
+                cur_buf_name = ''
 
-        vim.command('silent tabnew ' + cur_buf_name)
-        self.tabnr = vim.eval("tabpagenr()")
+            self.current_tab = vim.eval("tabpagenr()")
 
-        srcwin_name = self.__get_srcwin_name()
+            vim.command('silent tabnew ' + cur_buf_name)
+            self.tabnr = vim.eval("tabpagenr()")
 
-        self.watchwin = WatchWindow(self,'vertical belowright new')
-        self.watchwin.create()
+            srcwin_name = self.__get_srcwin_name()
 
-        self.stackwin = StackWindow(self,'belowright new')
-        self.stackwin.create()
+            self.watchwin = WatchWindow(self,'vertical belowright new')
+            self.watchwin.create()
 
-        self.statuswin = StatusWindow(self,'belowright new')
-        self.statuswin.create()
-        self.statuswin.set_status("loading")
+            self.stackwin = StackWindow(self,'belowright new')
+            self.stackwin.create()
 
-        self.watchwin.set_height(20)
-        self.statuswin.set_height(5)
+            self.statuswin = StatusWindow(self,'belowright new')
+            self.statuswin.create()
+            self.statuswin.set_status("loading")
 
-        logwin = LogWindow(self,'rightbelow 6new')
-        vdebug.log.Log.set_logger(\
-                vdebug.log.WindowLogger(\
-                vdebug.opts.Options.get('debug_window_level'),\
-                logwin))
+            self.watchwin.set_height(20)
+            self.statuswin.set_height(5)
 
-        winnr = self.__get_srcwinno_by_name(srcwin_name)
-        self.sourcewin = SourceWindow(self,winnr)
-        self.sourcewin.focus()
+            logwin = LogWindow(self,'rightbelow 6new')
+            vdebug.log.Log.set_logger(\
+                    vdebug.log.WindowLogger(\
+                    vdebug.opts.Options.get('debug_window_level'),\
+                    logwin))
+
+            winnr = self.__get_srcwinno_by_name(srcwin_name)
+            self.sourcewin = SourceWindow(self,winnr)
+            self.sourcewin.focus()
+        except Exception as e:
+            self.is_open = False
+            raise e
 
     def set_source_position(self,file,lineno):
         self.sourcewin.set_file(file)
@@ -100,7 +115,7 @@ class Ui(vdebug.ui.interface.Ui):
     def place_breakpoint(self,sign_id,file,line):
         vim.command('sign place '+str(sign_id)+\
                 ' name=breakpt line='+str(line)+\
-                ' file='+file)
+                ' file='+file.as_local())
 
     def remove_breakpoint(self,breakpoint):
         id = breakpoint.id
@@ -149,9 +164,11 @@ class Ui(vdebug.ui.interface.Ui):
         if self.statuswin:
             self.statuswin.destroy()
 
-        vdebug.log.Log.shutdown()
-
-        vim.command('silent! '+self.tabnr+'tabc!')
+        vdebug.log.Log.remove_logger('WindowLogger')
+        if self.tabnr:
+            vim.command('silent! '+self.tabnr+'tabc!')
+        if self.current_tab:
+            vim.command('tabn '+self.current_tab)
 
         self.watchwin = None
         self.stackwin = None
@@ -349,19 +366,19 @@ class BreakpointWindow(Window):
             vim.command('%s | python debugger.runner.ui.breakpointwin.is_open = False' % cmd)
 
     def add_breakpoint(self,breakpoint):
-        str = " %-7i | %-11s | " %(breakpoint.id,breakpoint.type)
+        bp_str = " %-7i | %-11s | " %(breakpoint.id,breakpoint.type)
         if breakpoint.type == 'line':
-            str += "%s:%i" %(breakpoint.file,breakpoint.line)
+            bp_str += "%s:%s" %(breakpoint.file,str(breakpoint.line))
         elif breakpoint.type == 'conditional':
-            str += "%s:%i when (%s)" \
-                %(breakpoint.file,breakpoint.line,breakpoint.condition)
+            bp_str += "%s:%s when (%s)" \
+                %(breakpoint.file,str(breakpoint.line),breakpoint.condition)
         elif breakpoint.type == 'exception':
-            str += "Exception: %s" % breakpoint.exception
+            bp_str += "Exception: %s" % breakpoint.exception
         elif breakpoint.type == 'call' or \
                 breakpoint.type == 'return':
-            str += "Function: %s" % breakpoint.function
+            bp_str += "Function: %s" % breakpoint.function
 
-        self.write(str)
+        self.write(bp_str)
 
     def remove_breakpoint(self,breakpoint_id):
         i = 0
@@ -423,9 +440,14 @@ class StatusWindow(Window):
     name = "DebuggerStatus"
 
     def on_create(self):
-        self.write("Status: starting\nListening on port\nNot connected\n\nPress <F5> to start "+\
-                "debugging, <F6> to stop/close. Type "+\
-                ":help Vdebug for more information.")
+        keys = vdebug.util.Keymapper()
+        output = "Status: starting\nListening on port\nNot connected\n\n"
+        output += "Press %s to start debugging, " %(keys.run_key()) 
+        output += "%s to stop/close. " %(keys.close_key())
+        output += "Type :help Vdebug for more information."
+        
+        self.write(output)
+
         self.command('setlocal syntax=debugger_status')
         if self.creation_count == 1:
             cmd = 'au BufWinLeave %s :silent! bdelete %s' %(self.name,self.name)

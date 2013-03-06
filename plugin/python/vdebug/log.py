@@ -1,5 +1,6 @@
 import time
 import sys
+import os
 
 class Logger:
     """ Abstract class for all logger implementations.
@@ -64,7 +65,7 @@ class FileLogger(Logger):
     only created if a message is written.
     """
     def __init__(self,debug_level,filename):
-        self.filename = filename
+        self.filename = os.path.expanduser(filename)
         self.f = None
         self.debug_level = int(debug_level)
 
@@ -106,7 +107,10 @@ class Log:
 
     @classmethod
     def set_logger(cls, logger):
-        cls.loggers[logger.__class__.__name__] = logger
+        k = logger.__class__.__name__
+        if k in cls.loggers:
+            cls.loggers[k].shutdown()
+        cls.loggers[k] = logger
 
     @classmethod
     def remove_logger(cls, type):
