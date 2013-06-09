@@ -2,6 +2,7 @@ import vdebug.opts
 import vdebug.log
 import vim
 import re
+import os
 import urllib
 
 class Keymapper:
@@ -25,24 +26,37 @@ class Keymapper:
     def map(self):
         if self.is_mapped:
             return
+        self._store_old_map()
         for func in self.keymaps:
-            key = self.keymaps[func]
             if func not in self.exclude:
-                vim.command("redir @z | silent noremap %s%s | redir END" %(self.leader,key))
-                self.__save_map_output( vim.eval("@z").strip() )
+                key = self.keymaps[func]
                 map_cmd = "noremap %s%s :python debugger.%s()<cr>" %\
                     (self.leader,key,func)
                 vim.command(map_cmd)
         self.is_mapped = True
 
-    def __save_map_output(self,output):
-        if output.startswith('No mapping'):
-            return False
-        else:
-            vdebug.log.Log("Storing existing key mapping, '%s' " % output,\
-                    vdebug.log.Logger.DEBUG)
-            self.existing.append(output)
-            return True
+    def _store_old_map(self):
+        vim.command('let tempfile=tempname()')
+        tempfile = vim.eval("tempfile")
+        vim.command('mkexrc! %s' % (tempfile))
+        regex = re.compile(r'^([nvxsoilc]|)(nore)?map!?')
+        split_regex = re.compile(r'\s+')
+        keys = set(v for (k,v) in self.keymaps.items() if k not in self.exclude)
+        special = set(["<buffer>", "<silent>", "<special>", "<script>", "<expr>", "<unique>"])
+        for line in open(tempfile, 'r'):
+            if not regex.match(line):
+                continue
+            parts = split_regex.split(line)[1:]
+            for p in parts:
+                if p in special:
+                    continue
+                elif p in keys:
+                    vdebug.log.Log("Storing existing key mapping, '%s' " % line,
+                                   vdebug.log.Logger.DEBUG)
+                    self.existing.append(line)
+                else:
+                    break
+        os.remove(tempfile)
 
     def unmap(self):
         if self.is_mapped:
@@ -55,7 +69,7 @@ class Keymapper:
             for mapping in self.existing:
                 vdebug.log.Log("Remapping key with '%s' " % mapping,\
                         vdebug.log.Logger.DEBUG)
-                vim.command("noremap %s" % mapping)
+                vim.command(mapping)
 
 class FilePath:
     is_win = False
@@ -152,6 +166,22 @@ class FilePath:
 
     def __repr__(self):
         return str(self)
+
+class LocalFilePath(FilePath):
+    def _create_local(self,f):
+        """Create the file name as a locally valid version.
+
+        Uses the "local_path" and "remote_path" options.
+        """
+        return f
+
+class RemoteFilePath(FilePath):
+    def _create_remote(self,f):
+        """Create the file name valid for the remote server.
+
+        Uses the "local_path" and "remote_path" options.
+        """
+        return f
 
 class FilePathError(Exception):
     pass

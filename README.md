@@ -16,11 +16,13 @@ It's written in Python, and has an object-oriented interface that is easy to ext
 and can even be used from the command-line. It even has unit tests covering
 some of the more critical parts of the code.
 
-# Recent version (version 1.4.0)
+# Recent version (version 1.4.1)
 
- * Allow setting of debugger features with the `g:vdebug_features` dictionary
- * Stop error when trying to debug with an unsaved file
- * Fixed stuck breakpoints
+ * Fix folds being forgotten after debugging (issue #56)
+ * Don't overwrite features array if it exists (issue #59)
+ * Mapping of single modes (thanks @xbot, #66)
+ * Stop empty buffers from being created (issue #70)
+ * Fix ElementTree deprecation warning (thanks @InFog, #89)
  * And more... check out the HISTORY file
 
 # How to use
@@ -38,7 +40,25 @@ To get this help, type:
 :help Vdebug
 ```
 
-after installing the plugin.
+after installing the plugin. If this doesn't work, you will need to generate the help tags.
+
+## Generating help tags
+
+Some package managers, such as Vundle, will automatically generate help tags. Others, such as Pathogen, won't by default, so you have to do it yourself. Also, if you have installed Vdebug manually then you will also have to do this step.
+
+For pathogen users, you can add this to your vimrc file to automatically generate helptags for your plugins:
+
+```vim
+call pathogen#helptags()
+```
+
+To manually generate the tags, run this in vim:
+
+```vim
+:helptags /path/to/vdebug/doc
+```
+
+where the path supplied is vdebug's doc directory. This should enable vdebug's help to be accessed.
 
 # Installation
 
@@ -116,8 +136,19 @@ If you're creating an issue then it's probably best to upload a log as a Gist, a
 
 I gladly accept contributions to the code. Just fork the repository, make your changes and open a pull request with detail about your changes. There are a couple of conditions:
 
- * The tests must pass (run `python vdebugtests.py` in the top directory of the plugin)
+ * The tests must pass (see below)
  * Your commit messages should follow the [rules outlined here][2]
+
+# Tests
+
+ * The tests use `unittest2` and `mock`, so make sure they're installed
+
+```
+pip install unittest2
+pip install mock
+```
+
+* To run the tests, run `python vdebugtests.py` in the top directory of the plugin
 
 # Licence
 

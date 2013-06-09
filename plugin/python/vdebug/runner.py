@@ -69,9 +69,9 @@ class Runner:
             else:
                 status = self.api.run()
             self.refresh(status)
-        except Exception as e:
+        except Exception:
             self.close()
-            raise e
+            raise
 
     def set_features(self):
         """Evaluate vim dictionary of features and pass to debugger.
@@ -113,7 +113,7 @@ class Runner:
                 stack_res = self.update_stack()
                 stack = stack_res.get_stack()
 
-                self.cur_file = vdebug.util.FilePath(stack[0].get('filename'))
+                self.cur_file = vdebug.util.RemoteFilePath(stack[0].get('filename'))
                 self.cur_lineno = stack[0].get('lineno')
 
                 vdebug.log.Log("Moving to current position in source window")

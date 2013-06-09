@@ -77,7 +77,7 @@ class CursorEvalEvent(Event):
     var_regex = {
         "default" : "^[a-zA-Z_]",
         "ruby" : "^[$@a-zA-Z_]",
-        "php" : "^\$",
+        "php" : "^[\$A-Z]",
         "perl" : "^[$@%]"
     }
 
@@ -95,7 +95,7 @@ class CursorEvalEvent(Event):
         var = ""
         linelen = len(line)
 
-        for i in range(colno,linelen-1):
+        for i in range(colno,linelen):
             char = line[i]
             if p.match(char):
                 var += char
@@ -141,7 +141,7 @@ class StackWindowLineSelectEvent(Event):
         filename_pos = line.find(" @ ") + 3
         file_and_line = line[filename_pos:]
         line_pos = file_and_line.rfind(":")
-        file = vdebug.util.FilePath(file_and_line[:line_pos])
+        file = vdebug.util.LocalFilePath(file_and_line[:line_pos])
         lineno = file_and_line[line_pos+1:]
         runner.ui.sourcewin.set_file(file)
         runner.ui.sourcewin.set_line(lineno)
@@ -231,7 +231,7 @@ class WatchWindowContextChangeEvent(Event):
         else:
             runner.get_context(context_id)
             return True
-            
+
     def __get_word_end(self,line,column):
         tab_end_pos = -1
         line_len = len(line)
