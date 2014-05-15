@@ -60,7 +60,7 @@ class VisualEvalEvent(Event):
     """Evaluate a block of code given by visual selection in Vim.
     """
     def execute(self,runner):
-        selection = vim.eval("vdebug:get_visual_selection()")
+        selection = vim.eval("Vdebug_get_visual_selection()")
         runner.eval(selection)
         return True
 
@@ -165,7 +165,8 @@ class WatchWindowPropertyGetEvent(Event):
         context_res = runner.api.property_get(name)
         rend = vdebug.ui.vimui.ContextGetResponseRenderer(context_res)
         output = rend.render(pointer_index - 1)
-        runner.ui.watchwin.delete(lineno,lineno+1)
+        if vdebug.opts.Options.get('watch_window_style') == 'expanded':
+          runner.ui.watchwin.delete(lineno,lineno+1)
         runner.ui.watchwin.insert(output.rstrip(),lineno-1,True)
 
 class WatchWindowHideEvent(Event):

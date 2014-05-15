@@ -1,18 +1,19 @@
-=== Vdebug 1.4.2 / 2013-11-11
+=== Vdebug 1.4.2 / 2014-05-15
 
 Bug fixes:
- * Add compatibility fix for Python debugging (due to incorrect "file:/" prefix) (issue #68, #102)
- * Fix remote path slash replacement (issue #94)
- * Fix rendering of unicode in watch window (issue #95)
- * Stop errors being thrown on Vim 7.4 (issue #98, #96, #99)
- * Fix error message on plugin reload, from function definition (thanks @glittershark, #106)
+ * Allow overriding of options dictionary after sourcing vdebug (issues #112, #113)
+ * Show local file path in stack window if using path mapping (issue #118)
+ * Change function names for stricter rules introduced in Vim v.7.4.260 (thanks @BlackEagle, #158 and #155)
 
 Documentation:
- * Correct minor spelling and grammar errors in help doc (thanks @dkinzer, #108)
- * Change the description for setting up the python debugger in the docs
+ * Various fixes
+ * Mention vim-nox package for Debian (thanks @henningda, #138)
+ * Add Python installation for Windows information (issue #135)
 
-Other:
- * Add cucumber for integration tests, and add lots of features
+Features:
+ * Add completion to :Breakpoint command (thanks @tommcdo, #124)
+ * Add VdebugStart command (thanks @blueyed, #132)
+ * Sleep for 100ms in wait loop, don't consume as much CPU (thanks @blueyed, #133)
 
 === Vdebug 1.4.1 / 2013-06-09
 
